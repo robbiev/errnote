@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	dir = "/home/robbie/notes"
+	defaultDir = "/home/robbie/notes"
 )
 
 type note struct {
@@ -46,7 +47,7 @@ func (n *note) Body() (string, error) {
 	return *n.cachedBody, nil
 }
 
-func readNotes() []*note {
+func readNotes(dir string) []*note {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -82,7 +83,13 @@ func readNotes() []*note {
 }
 
 func main() {
-	notes := readNotes()
+	dir := defaultDir
+	if len(os.Args) > 1 {
+		dir = os.Args[1]
+		fmt.Println(dir)
+	}
+
+	notes := readNotes(dir)
 
 	err := ui.Main(func() {
 
@@ -97,10 +104,10 @@ func main() {
 			//radio.Append(time.Now().Format(time.Stamp))
 			window.SetChild(nil)
 
-			fileName := time.Now().Format(time.StampMilli)
+			fileName := fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond))
 			ioutil.WriteFile(filepath.Join(dir, fileName), []byte(fileName+"\n"), 0600)
 
-			notes = readNotes()
+			notes = readNotes(dir)
 			grid, button := newUI(notes)
 			button.OnClicked(buttonClick)
 			window.SetChild(grid)
@@ -136,7 +143,8 @@ func newUI(notes []*note) (*ui.Grid, *ui.Button) {
 	title.OnChanged(func(*ui.Entry) {
 		note := notes[len(notes)-radio.Selected()-1]
 		note.title = title.Text()
-		note.file.Seek(0, os.SEEK_SET)
+		_, _ = note.file.Seek(0, os.SEEK_SET)
+		_ = note.file.Truncate(0)
 		_, err := note.file.WriteString(note.title + "\n" + *note.cachedBody)
 		if err != nil {
 			log.Println(err)
@@ -145,7 +153,8 @@ func newUI(notes []*note) (*ui.Grid, *ui.Button) {
 	text.OnChanged(func(*ui.MultilineEntry) {
 		note := notes[len(notes)-radio.Selected()-1]
 		*note.cachedBody = text.Text()
-		note.file.Seek(0, os.SEEK_SET)
+		_, _ = note.file.Seek(0, os.SEEK_SET)
+		_ = note.file.Truncate(0)
 		_, err := note.file.WriteString(note.title + "\n" + *note.cachedBody)
 		if err != nil {
 			log.Println(err)
@@ -163,7 +172,9 @@ func newUI(notes []*note) (*ui.Grid, *ui.Button) {
 	}
 
 	// select the first one
-	selector(notes[len(notes)-1])
+	if len(notes) > 0 {
+		selector(notes[len(notes)-1])
+	}
 
 	radio.OnSelected(func(*ui.RadioButtons) {
 		note := notes[len(notes)-radio.Selected()-1]
