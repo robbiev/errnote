@@ -93,7 +93,7 @@ func main() {
 
 	err := ui.Main(func() {
 
-		grid, button := newUI(notes)
+		grid, button, destroy := newUI(notes)
 
 		window := ui.NewWindow("errnote", 1024, 768, true)
 		window.SetMargined(true)
@@ -103,12 +103,13 @@ func main() {
 		buttonClick = func(*ui.Button) {
 			//radio.Append(time.Now().Format(time.Stamp))
 			window.SetChild(nil)
+			destroy()
 
 			fileName := fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond))
 			ioutil.WriteFile(filepath.Join(dir, fileName), []byte(fileName+"\n"), 0600)
 
 			notes = readNotes(dir)
-			grid, button := newUI(notes)
+			grid, button, destroy = newUI(notes)
 			button.OnClicked(buttonClick)
 			window.SetChild(grid)
 		}
@@ -129,7 +130,7 @@ func main() {
 	}
 }
 
-func newUI(notes []*note) (*ui.Grid, *ui.Button) {
+func newUI(notes []*note) (*ui.Grid, *ui.Button, func()) {
 	radio := ui.NewRadioButtons()
 
 	for i := len(notes) - 1; i >= 0; i-- {
@@ -227,5 +228,10 @@ func newUI(notes []*note) (*ui.Grid, *ui.Button) {
 		true,         // vexpand
 		ui.AlignFill, // valign
 	)
-	return grid, button
+	return grid, button, func() {
+		for i := 0; i < 4; i++ {
+			grid.Delete(0)
+		}
+		grid.Destroy()
+	}
 }
