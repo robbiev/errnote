@@ -1,7 +1,17 @@
 #include <gtk/gtk.h>
+#include <stdlib.h>
 
-static void print_message(GtkWidget *widget, gpointer data) {
-  g_print("bye bye\n");
+GtkWidget *list = NULL;
+int note = 0;
+
+static void add_note(GtkWidget *widget, gpointer data) {
+  g_print("create new note\n");
+
+  char s[20];
+  snprintf(s, 20, "%s %d", "new label", ++note);
+  GtkWidget *label = gtk_label_new(s);
+  gtk_container_add(GTK_CONTAINER(list), label);
+  gtk_widget_show_all(list);
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
@@ -22,35 +32,15 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_container_add(GTK_CONTAINER(window), grid);
   }
 
-  GtkWidget *tree;
+  list = gtk_list_box_new();
   {
-    GtkListStore *store = gtk_list_store_new(1, G_TYPE_STRING);
-
-    /* custom function to fill the model with data */
-    //populate_tree_model (store);
-
-    tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-
-    /* The view now holds a reference.  We can get rid of our own
-     *     * reference */
-    g_object_unref(G_OBJECT(store));
-
-    GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-    g_object_set(G_OBJECT(renderer), "foreground", "red", NULL);
-
-    GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes ("Notes", renderer, "text", 0, NULL);
-
-    gtk_tree_view_append_column (GTK_TREE_VIEW (tree), column);
+    GdkRGBA white;
+    white.red = 1;
+    white.green = 1;
+    white.blue = 1;
+    white.alpha = 1;
+    gtk_widget_override_background_color(list, GTK_STATE_FLAG_NORMAL, &white);
   }
-
-  GtkWidget *list = gtk_list_box_new();
-
-  GdkRGBA white;
-  white.red = 1;
-  white.green = 1;
-  white.blue = 1;
-  white.alpha = 1;
-  gtk_widget_override_background_color(list, GTK_STATE_FLAG_NORMAL, &white);
 
   GtkWidget *label = gtk_label_new("my label 1");
   GtkWidget *label2 = gtk_label_new("my label 2");
@@ -60,7 +50,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 
   GtkWidget *button = gtk_button_new_with_label("New");
   {
-    g_signal_connect(button, "clicked", G_CALLBACK(print_message), NULL);
+    g_signal_connect(button, "clicked", G_CALLBACK(add_note), NULL);
     //g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
   }
 
