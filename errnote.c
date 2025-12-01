@@ -1,14 +1,23 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
+#include <time.h>
 
-GtkWidget *list = NULL;
-int note = 0;
+static GtkWidget *list;
+static int note;
 
 static void add_note(GtkWidget *widget, gpointer data) {
   g_print("create new note\n");
 
+  time_t raw_time = time(NULL);
+  struct tm *timeinfo = localtime(&raw_time);
+  printf("local time: %s", asctime(timeinfo));
+
+  char buffer[64];
+  strftime(buffer, sizeof(buffer),"%Y%m%d_%H%M%S", timeinfo);
+  printf("Formatted date/time: %s\n", buffer);
+
   char s[20];
-  snprintf(s, 20, "%s %d", "new label", ++note);
+  snprintf(s, sizeof(s), "%s %d", "new label", ++note);
   GtkWidget *label = gtk_label_new(s);
   gtk_container_add(GTK_CONTAINER(list), label);
   gtk_widget_show_all(list);
